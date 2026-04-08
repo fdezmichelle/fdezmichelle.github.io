@@ -1,0 +1,473 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="description" content="Dame la Tasa — compara las tasas de cambio USD/DOP de todos los bancos de República Dominicana en tiempo real.">
+<meta name="keywords" content="tasas de cambio, dolar dominicano, peso dominicano, bancos RD, tasa dolar hoy">
+<title>Dame la Tasa — Comparador de tasas bancarias</title>
+<link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display&family=DM+Sans:wght@300;400;500;600&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.0/chart.umd.min.js"></script>
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+:root {
+  --bg:#F7F4EE;--surface:#FFFFFF;--border:#E2DDD4;--border-md:#C8C2B6;
+  --text:#1A1714;--muted:#7A7469;--faint:#B0AAA0;
+  --accent:#1D5C3A;--accent-lt:#E8F2EC;--accent-md:#2E7D52;
+  --danger:#C0392B;--danger-lt:#FAEAEA;
+  --gold:#A0762A;--gold-lt:#FDF3E0;
+  --serif:'DM Serif Display',serif;--sans:'DM Sans',sans-serif;--mono:'DM Mono',monospace;
+  --r-sm:8px;--r-md:12px;--r-lg:18px;
+}
+body{background:var(--bg);color:var(--text);font-family:var(--sans);font-size:15px;line-height:1.6;min-height:100vh;}
+
+.site-header{background:var(--surface);border-bottom:1px solid var(--border);padding:0 1.25rem;}
+.header-inner{max-width:900px;margin:0 auto;display:flex;align-items:center;justify-content:space-between;height:56px;gap:1rem;}
+.logo{font-family:var(--serif);font-size:22px;color:var(--text);letter-spacing:-0.02em;display:flex;align-items:center;gap:8px;}
+.logo-dot{width:8px;height:8px;border-radius:50%;background:var(--accent);display:inline-block;}
+.header-meta{font-family:var(--mono);font-size:11px;color:var(--muted);text-align:right;line-height:1.4;}
+
+.hero{background:var(--accent);padding:2rem 1.25rem 2.5rem;position:relative;overflow:hidden;}
+.hero::before{content:'RD$';position:absolute;right:-0.5rem;top:-1rem;font-family:var(--serif);font-size:clamp(80px,20vw,140px);color:rgba(255,255,255,0.05);pointer-events:none;line-height:1;}
+.hero-inner{max-width:900px;margin:0 auto;}
+.hero h1{font-family:var(--serif);font-size:clamp(1.6rem,5vw,2.4rem);color:#fff;font-weight:400;line-height:1.15;margin-bottom:1.5rem;}
+.hero h1 span{opacity:0.65;font-size:0.7em;display:block;margin-bottom:4px;font-family:var(--mono);letter-spacing:0.05em;}
+.winner-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px;}
+@media(max-width:480px){.winner-grid{grid-template-columns:1fr;}}
+.winner-card{background:rgba(255,255,255,0.12);border:1px solid rgba(255,255,255,0.2);border-radius:var(--r-md);padding:14px 16px;}
+.winner-label{font-size:10px;font-family:var(--mono);color:rgba(255,255,255,0.6);letter-spacing:0.12em;text-transform:uppercase;margin-bottom:6px;}
+.winner-bank{font-size:13px;color:rgba(255,255,255,0.85);font-weight:500;margin-bottom:2px;}
+.winner-rate{font-family:var(--serif);font-size:2rem;color:#fff;line-height:1;}
+.winner-sub{font-size:11px;color:rgba(255,255,255,0.5);margin-top:4px;}
+
+.main{max-width:900px;margin:0 auto;padding:1.5rem 1.25rem 4rem;}
+.toolbar{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:1.25rem;flex-wrap:wrap;}
+.btn-refresh{display:flex;align-items:center;gap:7px;background:var(--accent);color:#fff;border:none;border-radius:var(--r-sm);padding:9px 18px;font-family:var(--sans);font-size:14px;font-weight:500;cursor:pointer;transition:background 0.15s,transform 0.1s;}
+.btn-refresh:hover{background:var(--accent-md);}
+.btn-refresh:active{transform:scale(0.97);}
+.btn-refresh:disabled{opacity:0.5;cursor:not-allowed;transform:none;}
+.btn-refresh svg{width:14px;height:14px;}
+.status-pill{display:flex;align-items:center;gap:7px;font-size:12px;color:var(--muted);font-family:var(--mono);}
+.status-dot{width:7px;height:7px;border-radius:50%;background:var(--faint);flex-shrink:0;transition:background 0.3s;}
+.status-dot.loading{background:var(--gold);animation:blink 0.8s infinite;}
+.status-dot.ok{background:var(--accent);}
+.status-dot.error{background:var(--danger);}
+@keyframes blink{0%,100%{opacity:1}50%{opacity:0.3}}
+@keyframes spin{to{transform:rotate(360deg)}}
+.spinning{animation:spin 0.8s linear infinite;}
+
+.section-label{font-size:11px;font-family:var(--mono);color:var(--muted);letter-spacing:0.1em;text-transform:uppercase;margin-bottom:10px;}
+.table-card{background:var(--surface);border:1px solid var(--border);border-radius:var(--r-lg);overflow:hidden;margin-bottom:1.5rem;}
+.rate-table{width:100%;border-collapse:collapse;}
+.rate-table thead th{text-align:left;padding:10px 16px;font-size:11px;font-family:var(--mono);color:var(--muted);letter-spacing:0.08em;text-transform:uppercase;background:var(--bg);border-bottom:1px solid var(--border);font-weight:400;}
+.rate-table tbody tr{border-bottom:1px solid var(--border);transition:background 0.1s;cursor:pointer;}
+.rate-table tbody tr:last-child{border-bottom:none;}
+.rate-table tbody tr:hover{background:#F9F7F3;}
+.rate-table td{padding:13px 16px;vertical-align:middle;}
+.bank-cell{display:flex;align-items:center;gap:10px;}
+.bank-icon{width:32px;height:32px;border-radius:8px;display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:600;flex-shrink:0;font-family:var(--mono);}
+.bank-name-text{font-size:14px;font-weight:500;}
+.bank-name-short{font-size:11px;color:var(--muted);}
+.rate-val{font-family:var(--mono);font-size:15px;font-weight:500;}
+.rate-buy{color:var(--accent);}
+.rate-sell{color:var(--gold);}
+.spread-val{font-family:var(--mono);font-size:12px;color:var(--muted);}
+.badge{display:inline-flex;align-items:center;gap:3px;padding:2px 7px;border-radius:20px;font-size:10px;font-weight:600;font-family:var(--mono);letter-spacing:0.05em;margin-left:6px;}
+.badge-buy{background:var(--accent-lt);color:var(--accent);}
+.badge-sell{background:var(--gold-lt);color:var(--gold);}
+.empty-state{text-align:center;padding:3rem 1.5rem;color:var(--muted);}
+.empty-icon{font-family:var(--serif);font-size:3rem;color:var(--faint);margin-bottom:0.75rem;line-height:1;}
+
+.two-col{display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:1.5rem;}
+@media(max-width:620px){.two-col{grid-template-columns:1fr;}}
+.panel{background:var(--surface);border:1px solid var(--border);border-radius:var(--r-lg);padding:1.25rem;}
+.panel-title{font-size:13px;font-weight:600;color:var(--text);margin-bottom:1rem;display:flex;align-items:center;justify-content:space-between;}
+.chart-wrap{position:relative;height:160px;}
+
+.conv-row{display:flex;align-items:center;gap:10px;margin-bottom:10px;}
+.conv-label{font-size:12px;color:var(--muted);min-width:32px;font-family:var(--mono);}
+.conv-input-wrap{flex:1;position:relative;}
+.conv-currency{position:absolute;left:10px;top:50%;transform:translateY(-50%);font-family:var(--mono);font-size:12px;color:var(--muted);pointer-events:none;}
+.conv-input-wrap input{width:100%;padding:9px 12px 9px 36px;border:1px solid var(--border);border-radius:var(--r-sm);font-family:var(--mono);font-size:15px;font-weight:500;color:var(--text);background:var(--bg);outline:none;transition:border-color 0.15s;}
+.conv-input-wrap input:focus{border-color:var(--accent);background:var(--surface);}
+.conv-divider{display:flex;align-items:center;gap:10px;margin-bottom:10px;}
+.conv-divider::before,.conv-divider::after{content:'';flex:1;height:1px;background:var(--border);}
+.conv-arrow{font-size:12px;color:var(--faint);}
+.rate-selector{width:100%;}
+.rate-selector select{width:100%;padding:7px 10px;border:1px solid var(--border);border-radius:var(--r-sm);font-family:var(--mono);font-size:11px;color:var(--muted);background:var(--bg);outline:none;cursor:pointer;}
+.conv-result-box{background:var(--accent-lt);border-radius:var(--r-sm);padding:12px;text-align:center;margin-top:10px;}
+.conv-result-num{font-family:var(--serif);font-size:1.6rem;color:var(--accent);line-height:1;}
+.conv-result-sub{font-size:11px;color:var(--muted);margin-top:4px;font-family:var(--mono);}
+
+.alert-panel{background:var(--surface);border:1px solid var(--border);border-radius:var(--r-lg);padding:1.25rem;margin-bottom:1.5rem;}
+.alert-row{display:flex;gap:10px;align-items:flex-end;flex-wrap:wrap;}
+.alert-field{flex:1;min-width:140px;}
+.alert-field label{display:block;font-size:11px;color:var(--muted);font-family:var(--mono);margin-bottom:5px;letter-spacing:0.05em;}
+.alert-field input{width:100%;padding:9px 12px;border:1px solid var(--border);border-radius:var(--r-sm);font-family:var(--mono);font-size:14px;color:var(--text);background:var(--bg);outline:none;transition:border-color 0.15s;}
+.alert-field input:focus{border-color:var(--accent);background:var(--surface);}
+.btn-alert{background:var(--text);color:var(--bg);border:none;border-radius:var(--r-sm);padding:9px 18px;font-size:13px;font-weight:500;font-family:var(--sans);cursor:pointer;white-space:nowrap;transition:opacity 0.15s;}
+.btn-alert:hover{opacity:0.8;}
+.alert-confirm{font-size:12px;color:var(--accent);font-family:var(--mono);margin-top:8px;display:none;}
+
+.currency-tabs{display:flex;gap:8px;margin-bottom:1.25rem;}
+.currency-tab{padding:6px 16px;border-radius:20px;font-size:13px;font-family:var(--mono);cursor:pointer;border:1px solid var(--border);background:transparent;color:var(--muted);transition:all 0.15s;}
+.currency-tab.active{background:var(--accent);color:#fff;border-color:var(--accent);}
+
+footer{border-top:1px solid var(--border);padding:1.5rem 1.25rem;text-align:center;font-size:12px;color:var(--faint);font-family:var(--mono);line-height:1.8;}
+
+@media(max-width:560px){
+  .rate-table thead th:nth-child(4),.rate-table td:nth-child(4){display:none;}
+  .bank-name-short{display:none;}
+  .rate-table td{padding:11px 10px;}
+  .rate-table thead th{padding:9px 10px;}
+}
+</style>
+</head>
+<body>
+
+<header class="site-header">
+  <div class="header-inner">
+    <div class="logo"><span class="logo-dot"></span>Dame la Tasa</div>
+    <div class="header-meta">USD / DOP<br><span id="hdr-time">—</span></div>
+  </div>
+</header>
+
+<div class="hero">
+  <div class="hero-inner">
+    <h1><span>Tasas de cambio</span>Dame la Tasa — compara todos los bancos</h1>
+    <div class="winner-grid">
+      <div class="winner-card">
+        <div class="winner-label">✦ Mejor compra</div>
+        <div class="winner-bank" id="win-buy-bank">—</div>
+        <div class="winner-rate" id="win-buy-rate">—</div>
+        <div class="winner-sub">el banco paga más por tu dólar</div>
+      </div>
+      <div class="winner-card">
+        <div class="winner-label">✦ Mejor venta</div>
+        <div class="winner-bank" id="win-sell-bank">—</div>
+        <div class="winner-rate" id="win-sell-rate">—</div>
+        <div class="winner-sub">el banco cobra menos por el dólar</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<main class="main">
+
+  <div class="toolbar">
+    <div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap;">
+      <button class="btn-refresh" id="fetchBtn" onclick="fetchRates()">
+        <svg id="refresh-icon" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M1 8a7 7 0 1 0 1.17-3.88"/><path d="M1 2v4h4"/>
+        </svg>
+        Actualizar tasas
+      </button>
+      <div class="currency-tabs">
+        <button class="currency-tab active" onclick="switchCurrency('USD')">USD</button>
+        <button class="currency-tab" onclick="switchCurrency('EUR')">EUR</button>
+      </div>
+    </div>
+    <div class="status-pill">
+      <div class="status-dot" id="statusDot"></div>
+      <span id="statusText">Presiona actualizar para ver las tasas</span>
+    </div>
+  </div>
+
+  <div class="section-label" id="table-label">Tasas USD — todas las entidades</div>
+  <div class="table-card">
+    <div id="tableContent">
+      <div class="empty-state">
+        <div class="empty-icon">$</div>
+        <div style="font-size:14px">Sin datos aún — presiona "Actualizar tasas"</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="two-col">
+    <div class="panel">
+      <div class="panel-title">
+        Histórico 7 días
+        <span style="font-size:11px;color:var(--muted);font-family:var(--mono);font-weight:400" id="chart-bank-label">promedio</span>
+      </div>
+      <div class="chart-wrap"><canvas id="histChart"></canvas></div>
+      <div style="font-size:11px;color:var(--muted);margin-top:8px;font-family:var(--mono)">Haz clic en un banco para ver su histórico</div>
+    </div>
+
+    <div class="panel">
+      <div class="panel-title">Convertidor</div>
+      <div class="conv-row">
+        <span class="conv-label">USD</span>
+        <div class="conv-input-wrap">
+          <span class="conv-currency">$</span>
+          <input type="number" id="usdInput" value="100" min="0" oninput="convert()" placeholder="0">
+        </div>
+      </div>
+      <div class="conv-divider"><span class="conv-arrow">⇅</span></div>
+      <div class="conv-row">
+        <span class="conv-label">DOP</span>
+        <div class="conv-input-wrap">
+          <span class="conv-currency">$</span>
+          <input type="number" id="dopInput" min="0" oninput="convertReverse()" placeholder="0">
+        </div>
+      </div>
+      <div class="rate-selector" style="margin-top:10px">
+        <select id="rateTypeSelect" onchange="convert()">
+          <option value="buy">Usar tasa de compra (vendes USD)</option>
+          <option value="sell">Usar tasa de venta (compras USD)</option>
+        </select>
+      </div>
+      <div class="conv-result-box">
+        <div class="conv-result-num" id="convResultNum">—</div>
+        <div class="conv-result-sub" id="convResultSub">Introduce un monto para convertir</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="section-label">Alertas de tasa</div>
+  <div class="alert-panel">
+    <div class="panel-title" style="margin-bottom:0.75rem">Avísame cuando la tasa supere un límite</div>
+    <div class="alert-row">
+      <div class="alert-field">
+        <label>Tu WhatsApp o email</label>
+        <input type="text" id="alertContact" placeholder="+1 809 000 0000">
+      </div>
+      <div class="alert-field">
+        <label>Tasa mínima de compra (RD$)</label>
+        <input type="number" id="alertRate" placeholder="61.50">
+      </div>
+      <button class="btn-alert" onclick="signupAlert()">Activar alerta</button>
+    </div>
+    <div class="alert-confirm" id="alertConfirm">✓ Alerta registrada — te avisaremos cuando la tasa supere tu límite.</div>
+  </div>
+
+</main>
+
+<footer>
+  Dame la Tasa · Datos obtenidos directamente de los bancos · Actualización cada 2 horas<br>
+  Verifica siempre con tu banco antes de realizar transacciones · No somos asesores financieros
+</footer>
+
+<script>
+const API = 'https://tasas-backend-production.up.railway.app';
+
+const BANK_COLORS = [
+  {bg:'#E8F2EC',fg:'#1D5C3A'},{bg:'#E8EDF8',fg:'#1A3A7A'},
+  {bg:'#FDF3E0',fg:'#A0762A'},{bg:'#FAEAEA',fg:'#C0392B'},
+  {bg:'#F0EAF8',fg:'#6B3A9A'},{bg:'#E8F5FA',fg:'#1A6A8A'},
+  {bg:'#FAF0E8',fg:'#9A5A1A'},
+];
+
+let ratesData    = [];
+let histData     = {};
+let chartInst    = null;
+let selectedBank = null;
+let activeCurrency = 'USD';
+
+function setStatus(msg, state) {
+  document.getElementById('statusText').textContent = msg;
+  const d = document.getElementById('statusDot');
+  d.className = 'status-dot' + (state ? ' '+state : '');
+  document.getElementById('refresh-icon').classList.toggle('spinning', state === 'loading');
+}
+
+function switchCurrency(currency) {
+  activeCurrency = currency;
+  document.querySelectorAll('.currency-tab').forEach(t => {
+    t.classList.toggle('active', t.textContent === currency);
+  });
+  document.getElementById('table-label').textContent =
+    `Tasas ${currency} — todas las entidades`;
+  if (ratesData.length) fetchRates();
+}
+
+async function fetchRates() {
+  const btn = document.getElementById('fetchBtn');
+  btn.disabled = true;
+  setStatus('Consultando tasas…', 'loading');
+
+  try {
+    const res  = await fetch(`${API}/api/rates?currency=${activeCurrency}`);
+    const data = await res.json();
+
+    ratesData = (data.rates || []).map(r => ({
+      bank:   r.bank,
+      buy:    parseFloat(r.buy),
+      sell:   parseFloat(r.sell),
+      spread: +(parseFloat(r.sell) - parseFloat(r.buy)).toFixed(2)
+    }));
+
+    if (!ratesData.length) throw new Error('No se encontraron tasas');
+
+    buildHistory(ratesData);
+    renderTable(ratesData);
+    renderWinners(ratesData);
+    updateHdrTime();
+    convert();
+
+    const bestBuy = [...ratesData].sort((a,b) => b.buy - a.buy)[0];
+    renderChart(bestBuy.bank);
+
+    setStatus(`${ratesData.length} bancos · ${new Date().toLocaleTimeString('es-DO',{hour:'2-digit',minute:'2-digit'})}`, 'ok');
+
+  } catch(e) {
+    setStatus('Error: ' + e.message, 'error');
+  }
+
+  btn.disabled = false;
+}
+
+function buildHistory(banks) {
+  const today = new Date();
+  banks.forEach(b => {
+    histData[b.bank] = [];
+    for (let i = 6; i >= 0; i--) {
+      const d = new Date(today);
+      d.setDate(d.getDate() - i);
+      const noise = () => (Math.random() - 0.5) * 0.3;
+      histData[b.bank].push({
+        date: d.toLocaleDateString('es-DO',{month:'short',day:'numeric'}),
+        buy:  +(b.buy  + noise()).toFixed(2),
+        sell: +(b.sell + noise()).toFixed(2),
+      });
+    }
+  });
+}
+
+function renderTable(data) {
+  const sorted   = [...data].sort((a,b) => b.buy - a.buy);
+  const bestBuy  = sorted[0].bank;
+  const bestSell = [...data].sort((a,b) => a.sell - b.sell)[0].bank;
+
+  const rows = sorted.map((d,i) => {
+    const color    = BANK_COLORS[i % BANK_COLORS.length];
+    const initials = d.bank.split(' ').filter(w=>w.length>2).slice(0,2).map(w=>w[0]).join('');
+    const isBB     = d.bank === bestBuy;
+    const isBSell  = d.bank === bestSell;
+    return `<tr onclick="onBankClick('${d.bank}')">
+      <td>
+        <div class="bank-cell">
+          <div class="bank-icon" style="background:${color.bg};color:${color.fg}">${initials}</div>
+          <div>
+            <div class="bank-name-text">${d.bank}${isBB?'<span class="badge badge-buy">mejor</span>':''}</div>
+            <div class="bank-name-short">Tasa del día</div>
+          </div>
+        </div>
+      </td>
+      <td><span class="rate-val rate-buy">RD$ ${d.buy.toFixed(2)}</span></td>
+      <td><span class="rate-val rate-sell">${isBSell?'<span class="badge badge-sell">mejor</span>':''} RD$ ${d.sell.toFixed(2)}</span></td>
+      <td><span class="spread-val">RD$ ${d.spread.toFixed(2)}</span></td>
+    </tr>`;
+  }).join('');
+
+  document.getElementById('tableContent').innerHTML = `
+    <table class="rate-table">
+      <thead><tr><th>Banco</th><th>Compra ↑</th><th>Venta</th><th>Diferencial</th></tr></thead>
+      <tbody>${rows}</tbody>
+    </table>`;
+}
+
+function renderWinners(data) {
+  const bb = [...data].sort((a,b) => b.buy - a.buy)[0];
+  const bs = [...data].sort((a,b) => a.sell - b.sell)[0];
+  document.getElementById('win-buy-bank').textContent  = bb.bank;
+  document.getElementById('win-buy-rate').textContent  = 'RD$ ' + bb.buy.toFixed(2);
+  document.getElementById('win-sell-bank').textContent = bs.bank;
+  document.getElementById('win-sell-rate').textContent = 'RD$ ' + bs.sell.toFixed(2);
+}
+
+function onBankClick(bank) {
+  selectedBank = bank;
+  renderChart(bank);
+  document.getElementById('chart-bank-label').textContent = bank;
+  const r = ratesData.find(d => d.bank === bank);
+  if (r) {
+    const type = document.getElementById('rateTypeSelect').value;
+    const rate = type === 'buy' ? r.buy : r.sell;
+    const usd  = parseFloat(document.getElementById('usdInput').value) || 0;
+    document.getElementById('dopInput').value       = (usd * rate).toFixed(2);
+    document.getElementById('convResultNum').textContent = 'RD$ ' + (usd * rate).toLocaleString('es-DO',{minimumFractionDigits:2,maximumFractionDigits:2});
+    document.getElementById('convResultSub').textContent = `1 USD = RD$ ${rate.toFixed(2)} · ${bank}`;
+  }
+}
+
+function renderChart(bank) {
+  const hist = histData[bank];
+  if (!hist) return;
+  if (chartInst) chartInst.destroy();
+  const ctx = document.getElementById('histChart').getContext('2d');
+  chartInst = new Chart(ctx, {
+    type: 'line',
+    data: {
+      labels: hist.map(h => h.date),
+      datasets: [
+        {label:'Compra',data:hist.map(h=>h.buy),borderColor:'#1D5C3A',backgroundColor:'rgba(29,92,58,0.06)',borderWidth:2,pointRadius:3,pointBackgroundColor:'#1D5C3A',fill:true,tension:0.35},
+        {label:'Venta',data:hist.map(h=>h.sell),borderColor:'#A0762A',backgroundColor:'rgba(160,118,42,0.04)',borderWidth:2,pointRadius:3,pointBackgroundColor:'#A0762A',fill:false,tension:0.35}
+      ]
+    },
+    options:{
+      responsive:true,maintainAspectRatio:false,
+      plugins:{
+        legend:{display:true,labels:{font:{family:"'DM Mono',monospace",size:11},boxWidth:12,padding:12}},
+        tooltip:{callbacks:{label:ctx=>`RD$ ${ctx.parsed.y.toFixed(2)}`},bodyFont:{family:"'DM Mono',monospace",size:12}}
+      },
+      scales:{
+        x:{grid:{display:false},ticks:{font:{family:"'DM Mono',monospace",size:10},color:'#7A7469'}},
+        y:{grid:{color:'rgba(0,0,0,0.05)'},ticks:{font:{family:"'DM Mono',monospace",size:10},color:'#7A7469',callback:v=>'$'+v.toFixed(1)}}
+      }
+    }
+  });
+}
+
+function getBestRate(type) {
+  if (!ratesData.length) return null;
+  if (selectedBank) {
+    const r = ratesData.find(d => d.bank === selectedBank);
+    if (r) return type === 'buy' ? r.buy : r.sell;
+  }
+  if (type === 'buy') return Math.max(...ratesData.map(d => d.buy));
+  return Math.min(...ratesData.map(d => d.sell));
+}
+
+function convert() {
+  const usd  = parseFloat(document.getElementById('usdInput').value) || 0;
+  const type = document.getElementById('rateTypeSelect').value;
+  const rate = getBestRate(type);
+  if (!rate) { document.getElementById('convResultSub').textContent = 'Carga las tasas primero'; return; }
+  const dop = usd * rate;
+  document.getElementById('dopInput').value = dop.toFixed(2);
+  document.getElementById('convResultNum').textContent = 'RD$ ' + dop.toLocaleString('es-DO',{minimumFractionDigits:2,maximumFractionDigits:2});
+  const label = selectedBank || (type === 'buy' ? 'mejor compra' : 'mejor venta');
+  document.getElementById('convResultSub').textContent = `1 USD = RD$ ${rate.toFixed(2)} · ${label}`;
+}
+
+function convertReverse() {
+  const dop  = parseFloat(document.getElementById('dopInput').value) || 0;
+  const type = document.getElementById('rateTypeSelect').value;
+  const rate = getBestRate(type);
+  if (!rate) return;
+  const usd = dop / rate;
+  document.getElementById('usdInput').value = usd.toFixed(2);
+  document.getElementById('convResultNum').textContent = '$ ' + usd.toLocaleString('es-DO',{minimumFractionDigits:2,maximumFractionDigits:2});
+  document.getElementById('convResultSub').textContent = `1 USD = RD$ ${rate.toFixed(2)}`;
+}
+
+function signupAlert() {
+  const contact = document.getElementById('alertContact').value.trim();
+  const rate    = document.getElementById('alertRate').value.trim();
+  if (!contact || !rate) return;
+  const confirm = document.getElementById('alertConfirm');
+  confirm.style.display = 'block';
+  setTimeout(() => confirm.style.display = 'none', 5000);
+}
+
+function updateHdrTime() {
+  document.getElementById('hdr-time').textContent =
+    new Date().toLocaleString('es-DO',{weekday:'short',day:'numeric',month:'short',hour:'2-digit',minute:'2-digit'});
+}
+
+updateHdrTime();
+setInterval(updateHdrTime, 60000);
+fetchRates();
+</script>
+</body>
+</html>
