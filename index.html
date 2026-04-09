@@ -290,7 +290,7 @@ async function fetchRates() {
       spread: +(parseFloat(r.sell)-parseFloat(r.buy)).toFixed(2)
     }));
     if (!ratesData.length) throw new Error('No se encontraron tasas');
-    buildHistory(ratesData);
+    await buildHistory(ratesData);
     renderTable(ratesData);
     renderWinners(ratesData);
     updateHdrTime();
