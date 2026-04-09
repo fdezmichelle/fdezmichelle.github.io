@@ -304,21 +304,36 @@ async function fetchRates() {
   btn.disabled = false;
 }
 
-function buildHistory(banks) {
-  const today = new Date();
-  banks.forEach(b => {
-    histData[b.bank] = [];
-    for (let i=6;i>=0;i--) {
-      const d = new Date(today);
-      d.setDate(d.getDate()-i);
-      const n = ()=>(Math.random()-0.5)*0.3;
-      histData[b.bank].push({
-        date: d.toLocaleDateString('es-DO',{month:'short',day:'numeric'}),
-        buy:  +(b.buy+n()).toFixed(2),
-        sell: +(b.sell+n()).toFixed(2)
-      });
+async function buildHistory(banks) {
+  for (const b of banks) {
+    try {
+      const res = await fetch(`${API}/api/rates/history?bank=${encodeURIComponent(b.bank)}&currency=${activeCurrency}&days=7`);
+      const data = await res.json();
+      if (data.history && data.history.length > 0) {
+        histData[b.bank] = data.history;
+      } else {
+        histData[b.bank] = buildFallback(b);
+      }
+    } catch(e) {
+      histData[b.bank] = buildFallback(b);
     }
-  });
+  }
+}
+
+function buildFallback(b) {
+  const today = new Date();
+  const result = [];
+  for (let i = 6; i >= 0; i--) {
+    const d = new Date(today);
+    d.setDate(d.getDate() - i);
+    const noise = () => (Math.random() - 0.5) * 0.3;
+    result.push({
+      date: d.toLocaleDateString('es-DO', {month:'short', day:'numeric'}),
+      buy:  +(b.buy + noise()).toFixed(2),
+      sell: +(b.sell + noise()).toFixed(2),
+    });
+  }
+  return result;
 }
 
 function renderTable(data) {
