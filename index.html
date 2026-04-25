@@ -364,12 +364,19 @@ function renderTable(data) {
 }
 
 function renderWinners(data) {
-  const bb = [...data].sort((a,b)=>b.buy-a.buy)[0];
-  const bs = [...data].sort((a,b)=>a.sell-b.sell)[0];
+  const bb  = [...data].sort((a,b) => b.buy - a.buy)[0];
+  const bs  = [...data].sort((a,b) => a.sell - b.sell)[0];
+  const cur = activeCurrency === 'EUR' ? 'euro' : 'dólar';
+
   document.getElementById('win-buy-bank').textContent  = bb.bank;
-  document.getElementById('win-buy-rate').textContent  = 'RD$ '+bb.buy.toFixed(2);
+  document.getElementById('win-buy-rate').textContent  = 'RD$ ' + bb.buy.toFixed(2);
   document.getElementById('win-sell-bank').textContent = bs.bank;
-  document.getElementById('win-sell-rate').textContent = 'RD$ '+bs.sell.toFixed(2);
+  document.getElementById('win-sell-rate').textContent = 'RD$ ' + bs.sell.toFixed(2);
+
+  document.querySelector('#win-buy-bank').closest('.winner-card').querySelector('.winner-sub').textContent =
+    `el banco paga más por tu ${cur}`;
+  document.querySelector('#win-sell-bank').closest('.winner-card').querySelector('.winner-sub').textContent =
+    `el banco cobra menos por el ${cur}`;
 }
 
 function onBankClick(bank) {
