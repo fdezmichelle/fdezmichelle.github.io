@@ -140,13 +140,13 @@ footer a{color:var(--faint);text-decoration:none;}
     <h1><span>República Dominicana · Tasas de cambio</span>Dame la Tasa</h1>
     <div class="winner-grid">
       <div class="winner-card">
-        <div class="winner-label">✦ Mejor compra USD</div>
+        <div class="winner-label" id="win-buy-label">✦ Mejor compra USD</div>
         <div class="winner-bank" id="win-buy-bank">—</div>
         <div class="winner-rate" id="win-buy-rate">—</div>
         <div class="winner-sub" id="win-buy-sub">el banco paga más por tu dólar</div>
       </div>
       <div class="winner-card">
-        <div class="winner-label">✦ Mejor venta USD</div>
+        <div class="winner-label" id="win-sell-label">✦ Mejor venta USD</div>
         <div class="winner-bank" id="win-sell-bank">—</div>
         <div class="winner-rate" id="win-sell-rate">—</div>
         <div class="winner-sub" id="win-sell-sub">el banco cobra menos por el dólar</div>
@@ -367,6 +367,10 @@ function renderWinners(data) {
   const bb  = [...data].sort((a,b) => b.buy - a.buy)[0];
   const bs  = [...data].sort((a,b) => a.sell - b.sell)[0];
   const cur = activeCurrency === 'EUR' ? 'euro' : 'dólar';
+  const curLabel = activeCurrency;
+
+  document.getElementById('win-buy-label').textContent = `✦ Mejor compra ${curLabel}`;
+  document.getElementById('win-sell-label').textContent = `✦ Mejor venta ${curLabel}`;
 
   document.getElementById('win-buy-bank').textContent = bb.bank;
   document.getElementById('win-buy-rate').textContent = 'RD$ ' + bb.buy.toFixed(2);
