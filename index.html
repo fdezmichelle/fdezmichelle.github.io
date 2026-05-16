@@ -1,6 +1,6 @@
 <!DOCTYPE html>
 <html lang="es">
-  <!-- Google tag (gtag.js) -->
+<!-- Google tag (gtag.js) -->
 <script async src="https://www.googletagmanager.com/gtag/js?id=G-YVX748YVTG"></script>
 <script>
   window.dataLayer = window.dataLayer || [];
@@ -107,6 +107,8 @@ body{background:var(--bg);color:var(--text);font-family:var(--sans);font-size:15
 .conv-result-num{font-family:var(--serif);font-size:1.6rem;color:var(--accent);line-height:1;}
 .conv-result-sub{font-size:11px;color:var(--muted);margin-top:4px;font-family:var(--mono);}
 .alert-panel{background:var(--surface);border:1px solid var(--border);border-radius:var(--r-lg);padding:1.25rem;margin-bottom:1.5rem;}
+.alert-type-btn{padding:8px 16px;border-radius:var(--r-sm);font-size:13px;font-family:var(--sans);cursor:pointer;border:1px solid var(--border);background:transparent;color:var(--muted);transition:all 0.15s;}
+.alert-type-btn.active{background:var(--accent);color:#fff;border-color:var(--accent);}
 .alert-row{display:flex;gap:10px;align-items:flex-end;flex-wrap:wrap;}
 .alert-field{flex:1;min-width:140px;}
 .alert-field label{display:block;font-size:11px;color:var(--muted);font-family:var(--mono);margin-bottom:5px;letter-spacing:0.05em;}
@@ -116,8 +118,8 @@ body{background:var(--bg);color:var(--text);font-family:var(--sans);font-size:15
 .btn-alert:hover{opacity:0.8;}
 .btn-alert:disabled{opacity:0.5;cursor:not-allowed;}
 .alert-confirm{font-size:12px;color:var(--accent);font-family:var(--mono);margin-top:8px;display:none;}
+.alert-hint{font-size:12px;color:var(--muted);font-family:var(--mono);margin-top:8px;}
 footer{border-top:1px solid var(--border);padding:1.5rem 1.25rem;text-align:center;font-size:12px;color:var(--faint);font-family:var(--mono);line-height:1.8;}
-footer a{color:var(--faint);text-decoration:none;}
 @media(max-width:560px){
   .rate-table thead th:nth-child(4),.rate-table td:nth-child(4){display:none;}
   .bank-name-short{display:none;}
@@ -228,19 +230,40 @@ footer a{color:var(--faint);text-decoration:none;}
 
   <div class="section-label">Alertas de tasa</div>
   <div class="alert-panel">
-    <div class="panel-title" style="margin-bottom:0.75rem">Avísame cuando la tasa supere un límite</div>
-    <div class="alert-row">
-      <div class="alert-field">
-        <label>Tu email</label>
-        <input type="email" id="alertContact" placeholder="tu@email.com">
-      </div>
-      <div class="alert-field">
-        <label>Tasa mínima de compra (RD$)</label>
-        <input type="number" id="alertRate" placeholder="61.50">
-      </div>
-      <button class="btn-alert" onclick="signupAlert()">Activar alerta</button>
+    <div class="panel-title" style="margin-bottom:0.75rem">Mantente informado</div>
+
+    <div style="display:flex;gap:10px;margin-bottom:1.25rem;flex-wrap:wrap;">
+      <button class="alert-type-btn active" id="btn-type-price" onclick="switchAlertType('price')">📈 Alerta de precio</button>
+      <button class="alert-type-btn" id="btn-type-daily" onclick="switchAlertType('daily')">📧 Resumen diario</button>
     </div>
-    <div class="alert-confirm" id="alertConfirm">✓ Alerta activada — revisa tu email para confirmar.</div>
+
+    <div id="alert-price-form">
+      <div class="alert-row">
+        <div class="alert-field">
+          <label>Tu email</label>
+          <input type="email" id="alertContact" placeholder="tu@email.com">
+        </div>
+        <div class="alert-field">
+          <label>Tasa mínima de compra (RD$)</label>
+          <input type="number" id="alertRate" placeholder="61.50">
+        </div>
+        <button class="btn-alert" id="btn-price-submit" onclick="signupAlert('price')">Activar alerta</button>
+      </div>
+      <div class="alert-hint">Te avisamos cuando cualquier banco supere tu tasa objetivo</div>
+    </div>
+
+    <div id="alert-daily-form" style="display:none;">
+      <div class="alert-row">
+        <div class="alert-field">
+          <label>Tu email</label>
+          <input type="email" id="alertDailyEmail" placeholder="tu@email.com">
+        </div>
+        <button class="btn-alert" id="btn-daily-submit" onclick="signupAlert('daily')">Suscribirme</button>
+      </div>
+      <div class="alert-hint">Recibirás un email cada mañana con las mejores tasas del día</div>
+    </div>
+
+    <div class="alert-confirm" id="alertConfirm">✓ Listo — revisa tu email para confirmar.</div>
   </div>
 
 </main>
@@ -265,13 +288,13 @@ let ratesData = [], histData = {}, chartInst = null, selectedBank = null, active
 
 function setStatus(msg, state) {
   document.getElementById('statusText').textContent = msg;
-  document.getElementById('statusDot').className = 'status-dot' + (state?' '+state:'');
-  document.getElementById('refresh-icon').classList.toggle('spinning', state==='loading');
+  document.getElementById('statusDot').className = 'status-dot' + (state ? ' ' + state : '');
+  document.getElementById('refresh-icon').classList.toggle('spinning', state === 'loading');
 }
 
 function switchCurrency(currency) {
   activeCurrency = currency;
-  document.querySelectorAll('.currency-tab').forEach(t => t.classList.toggle('active', t.textContent===currency));
+  document.querySelectorAll('.currency-tab').forEach(t => t.classList.toggle('active', t.textContent === currency));
   document.getElementById('table-label').textContent = `Tasas ${currency} — todas las entidades`;
   selectedBank = null;
   fetchRates();
@@ -284,11 +307,11 @@ async function fetchRates() {
   try {
     const res  = await fetch(`${API}/api/rates?currency=${activeCurrency}`);
     const data = await res.json();
-    ratesData = (data.rates||[]).map(r=>({
-      bank: r.bank,
-      buy:  parseFloat(r.buy),
-      sell: parseFloat(r.sell),
-      spread: +(parseFloat(r.sell)-parseFloat(r.buy)).toFixed(2)
+    ratesData = (data.rates || []).map(r => ({
+      bank:   r.bank,
+      buy:    parseFloat(r.buy),
+      sell:   parseFloat(r.sell),
+      spread: +(parseFloat(r.sell) - parseFloat(r.buy)).toFixed(2)
     }));
     if (!ratesData.length) throw new Error('No se encontraron tasas');
     await buildHistory(ratesData);
@@ -296,10 +319,10 @@ async function fetchRates() {
     renderWinners(ratesData);
     updateHdrTime();
     convert();
-    renderChart([...ratesData].sort((a,b)=>b.buy-a.buy)[0].bank);
-    setStatus(`${ratesData.length} bancos · ${new Date().toLocaleTimeString('es-DO',{hour:'2-digit',minute:'2-digit'})}`, 'ok');
+    renderChart([...ratesData].sort((a, b) => b.buy - a.buy)[0].bank);
+    setStatus(`${ratesData.length} bancos · ${new Date().toLocaleTimeString('es-DO', {hour:'2-digit', minute:'2-digit'})}`, 'ok');
   } catch(e) {
-    setStatus('Error: '+e.message, 'error');
+    setStatus('Error: ' + e.message, 'error');
     document.getElementById('tableContent').innerHTML = `<div class="empty-state"><div class="empty-icon">!</div><div style="font-size:14px">No se pudieron cargar las tasas. Intenta de nuevo.</div></div>`;
   }
   btn.disabled = false;
@@ -326,7 +349,7 @@ function buildFallback(b) {
     const noise = () => (Math.random() - 0.5) * 0.3;
     result.push({
       date: d.toLocaleDateString('es-DO', {month:'short', day:'numeric'}),
-      buy:  +(b.buy + noise()).toFixed(2),
+      buy:  +(b.buy  + noise()).toFixed(2),
       sell: +(b.sell + noise()).toFixed(2),
     });
   }
@@ -334,25 +357,25 @@ function buildFallback(b) {
 }
 
 function renderTable(data) {
-  const sorted   = [...data].sort((a,b) => b.buy - a.buy);
+  const sorted   = [...data].sort((a, b) => b.buy - a.buy);
   const maxBuy   = Math.max(...data.map(d => d.buy));
   const minSell  = Math.min(...data.map(d => d.sell));
-  const bestBuy  = data.filter(d => d.buy === maxBuy).map(d => d.bank);
+  const bestBuy  = data.filter(d => d.buy  === maxBuy).map(d => d.bank);
   const bestSell = data.filter(d => d.sell === minSell).map(d => d.bank);
 
-  const rows = sorted.map((d,i) => {
+  const rows = sorted.map((d, i) => {
     const c    = BANK_COLORS[i % BANK_COLORS.length];
-    const init = d.bank.split(' ').filter(w=>w.length>2).slice(0,2).map(w=>w[0]).join('');
+    const init = d.bank.split(' ').filter(w => w.length > 2).slice(0, 2).map(w => w[0]).join('');
     return `<tr onclick="onBankClick('${d.bank}')">
       <td><div class="bank-cell">
         <div class="bank-icon" style="background:${c.bg};color:${c.fg}">${init}</div>
         <div>
-          <div class="bank-name-text">${d.bank}${bestBuy.includes(d.bank)?'<span class="badge badge-buy">mejor</span>':''}</div>
+          <div class="bank-name-text">${d.bank}${bestBuy.includes(d.bank) ? '<span class="badge badge-buy">mejor</span>' : ''}</div>
           <div class="bank-name-short">Tasa del día</div>
         </div>
       </div></td>
       <td><span class="rate-val rate-buy">RD$ ${d.buy.toFixed(2)}</span></td>
-      <td><span class="rate-val rate-sell">${bestSell.includes(d.bank)?'<span class="badge badge-sell">mejor</span>':''} RD$ ${d.sell.toFixed(2)}</span></td>
+      <td><span class="rate-val rate-sell">${bestSell.includes(d.bank) ? '<span class="badge badge-sell">mejor</span>' : ''} RD$ ${d.sell.toFixed(2)}</span></td>
       <td><span class="spread-val">RD$ ${d.spread.toFixed(2)}</span></td>
     </tr>`;
   }).join('');
@@ -365,17 +388,14 @@ function renderTable(data) {
 }
 
 function renderWinners(data) {
-  const maxBuy  = Math.max(...data.map(d => d.buy));
-  const minSell = Math.min(...data.map(d => d.sell));
-
-  const buyWinners  = data.filter(d => d.buy === maxBuy);
+  const maxBuy      = Math.max(...data.map(d => d.buy));
+  const minSell     = Math.min(...data.map(d => d.sell));
+  const buyWinners  = data.filter(d => d.buy  === maxBuy);
   const sellWinners = data.filter(d => d.sell === minSell);
+  const cur         = activeCurrency === 'EUR' ? 'euro' : 'dólar';
 
-  const cur      = activeCurrency === 'EUR' ? 'euro' : 'dólar';
-  const curLabel = activeCurrency;
-
-  document.getElementById('win-buy-label').textContent  = `✦ Mejor compra ${curLabel}`;
-  document.getElementById('win-sell-label').textContent = `✦ Mejor venta ${curLabel}`;
+  document.getElementById('win-buy-label').textContent  = `✦ Mejor compra ${activeCurrency}`;
+  document.getElementById('win-sell-label').textContent = `✦ Mejor venta ${activeCurrency}`;
 
   document.getElementById('win-buy-bank').textContent = buyWinners.map(b => b.bank).join(' · ');
   document.getElementById('win-buy-rate').textContent = 'RD$ ' + maxBuy.toFixed(2);
@@ -399,7 +419,7 @@ function onBankClick(bank) {
     const rate = document.getElementById('rateTypeSelect').value === 'buy' ? r.buy : r.sell;
     const usd  = parseFloat(document.getElementById('usdInput').value) || 0;
     document.getElementById('dopInput').value = (usd * rate).toFixed(2);
-    document.getElementById('convResultNum').textContent = 'RD$ ' + (usd * rate).toLocaleString('es-DO',{minimumFractionDigits:2,maximumFractionDigits:2});
+    document.getElementById('convResultNum').textContent = 'RD$ ' + (usd * rate).toLocaleString('es-DO', {minimumFractionDigits:2, maximumFractionDigits:2});
     document.getElementById('convResultSub').textContent = `1 ${activeCurrency} = RD$ ${rate.toFixed(2)} · ${bank}`;
   }
 }
@@ -413,19 +433,19 @@ function renderChart(bank) {
     data: {
       labels: hist.map(h => h.date),
       datasets: [
-        {label:'Compra',data:hist.map(h=>h.buy),borderColor:'#1D5C3A',backgroundColor:'rgba(29,92,58,0.06)',borderWidth:2,pointRadius:3,pointBackgroundColor:'#1D5C3A',fill:true,tension:0.35},
-        {label:'Venta',data:hist.map(h=>h.sell),borderColor:'#A0762A',backgroundColor:'rgba(160,118,42,0.04)',borderWidth:2,pointRadius:3,pointBackgroundColor:'#A0762A',fill:false,tension:0.35}
+        {label:'Compra', data:hist.map(h=>h.buy),  borderColor:'#1D5C3A', backgroundColor:'rgba(29,92,58,0.06)',  borderWidth:2, pointRadius:3, pointBackgroundColor:'#1D5C3A', fill:true,  tension:0.35},
+        {label:'Venta',  data:hist.map(h=>h.sell), borderColor:'#A0762A', backgroundColor:'rgba(160,118,42,0.04)', borderWidth:2, pointRadius:3, pointBackgroundColor:'#A0762A', fill:false, tension:0.35}
       ]
     },
-    options:{
-      responsive:true,maintainAspectRatio:false,
-      plugins:{
-        legend:{display:true,labels:{font:{family:"'DM Mono',monospace",size:11},boxWidth:12,padding:12}},
-        tooltip:{callbacks:{label:ctx=>`RD$ ${ctx.parsed.y.toFixed(2)}`},bodyFont:{family:"'DM Mono',monospace",size:12}}
+    options: {
+      responsive:true, maintainAspectRatio:false,
+      plugins: {
+        legend: {display:true, labels:{font:{family:"'DM Mono',monospace", size:11}, boxWidth:12, padding:12}},
+        tooltip: {callbacks:{label:ctx=>`RD$ ${ctx.parsed.y.toFixed(2)}`}, bodyFont:{family:"'DM Mono',monospace", size:12}}
       },
-      scales:{
-        x:{grid:{display:false},ticks:{font:{family:"'DM Mono',monospace",size:10},color:'#7A7469'}},
-        y:{grid:{color:'rgba(0,0,0,0.05)'},ticks:{font:{family:"'DM Mono',monospace",size:10},color:'#7A7469',callback:v=>'$'+v.toFixed(1)}}
+      scales: {
+        x: {grid:{display:false}, ticks:{font:{family:"'DM Mono',monospace", size:10}, color:'#7A7469'}},
+        y: {grid:{color:'rgba(0,0,0,0.05)'}, ticks:{font:{family:"'DM Mono',monospace", size:10}, color:'#7A7469', callback:v=>'$'+v.toFixed(1)}}
       }
     }
   });
@@ -443,8 +463,8 @@ function convert() {
   if (!rate) return;
   const dop = usd * rate;
   document.getElementById('dopInput').value = dop.toFixed(2);
-  document.getElementById('convResultNum').textContent = 'RD$ ' + dop.toLocaleString('es-DO',{minimumFractionDigits:2,maximumFractionDigits:2});
-  document.getElementById('convResultSub').textContent = `1 ${activeCurrency} = RD$ ${rate.toFixed(2)} · ${selectedBank||'mejor tasa'}`;
+  document.getElementById('convResultNum').textContent = 'RD$ ' + dop.toLocaleString('es-DO', {minimumFractionDigits:2, maximumFractionDigits:2});
+  document.getElementById('convResultSub').textContent = `1 ${activeCurrency} = RD$ ${rate.toFixed(2)} · ${selectedBank || 'mejor tasa'}`;
 }
 
 function convertReverse() {
@@ -453,61 +473,75 @@ function convertReverse() {
   if (!rate) return;
   const usd = dop / rate;
   document.getElementById('usdInput').value = usd.toFixed(2);
-  document.getElementById('convResultNum').textContent = '$ ' + usd.toLocaleString('es-DO',{minimumFractionDigits:2,maximumFractionDigits:2});
+  document.getElementById('convResultNum').textContent = '$ ' + usd.toLocaleString('es-DO', {minimumFractionDigits:2, maximumFractionDigits:2});
   document.getElementById('convResultSub').textContent = `1 ${activeCurrency} = RD$ ${rate.toFixed(2)}`;
 }
 
-async function signupAlert() {
-  const email      = document.getElementById('alertContact').value.trim();
-  const targetRate = document.getElementById('alertRate').value.trim();
+function switchAlertType(type) {
+  document.getElementById('alert-price-form').style.display = type === 'price' ? 'block' : 'none';
+  document.getElementById('alert-daily-form').style.display = type === 'daily' ? 'block' : 'none';
+  document.getElementById('btn-type-price').classList.toggle('active', type === 'price');
+  document.getElementById('btn-type-daily').classList.toggle('active', type === 'daily');
+  document.getElementById('alertConfirm').style.display = 'none';
+}
 
-  if (!email || !targetRate) {
-    alert('Por favor introduce tu email y la tasa deseada');
-    return;
-  }
+async function signupAlert(type) {
+  const emailId = type === 'price' ? 'alertContact' : 'alertDailyEmail';
+  const email   = document.getElementById(emailId).value.trim();
 
-  if (!email.includes('@')) {
+  if (!email || !email.includes('@')) {
     alert('Por favor introduce un email válido');
     return;
   }
 
-  const btn = document.querySelector('.btn-alert');
-  btn.disabled = true;
+  if (type === 'price') {
+    const targetRate = document.getElementById('alertRate').value.trim();
+    if (!targetRate) {
+      alert('Por favor introduce la tasa objetivo');
+      return;
+    }
+  }
+
+  const btnId = type === 'price' ? 'btn-price-submit' : 'btn-daily-submit';
+  const btn   = document.getElementById(btnId);
+  btn.disabled    = true;
   btn.textContent = 'Guardando…';
 
   try {
-    const res = await fetch(`${API}/api/alerts`, {
-      method: 'POST',
+    const body = type === 'price'
+      ? { email, targetRate: parseFloat(document.getElementById('alertRate').value), currency: activeCurrency, type: 'price' }
+      : { email, type: 'daily' };
+
+    const res  = await fetch(`${API}/api/alerts`, {
+      method:  'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        email,
-        targetRate: parseFloat(targetRate),
-        currency: activeCurrency
-      })
+      body:    JSON.stringify(body)
     });
 
     const data = await res.json();
 
     if (data.success) {
       const confirm = document.getElementById('alertConfirm');
-      confirm.textContent = '✓ Alerta activada — revisa tu email para confirmar';
+      confirm.textContent = type === 'price'
+        ? '✓ Alerta de precio activada — revisa tu email'
+        : '✓ Suscrito al resumen diario — revisa tu email';
       confirm.style.display = 'block';
-      document.getElementById('alertContact').value = '';
-      document.getElementById('alertRate').value = '';
+      document.getElementById(emailId).value = '';
+      if (type === 'price') document.getElementById('alertRate').value = '';
       setTimeout(() => confirm.style.display = 'none', 6000);
     } else {
       alert('Error: ' + (data.error || 'Intenta de nuevo'));
     }
   } catch(e) {
-    alert('Error al guardar la alerta. Intenta de nuevo.');
+    alert('Error al guardar. Intenta de nuevo.');
   }
 
-  btn.disabled = false;
-  btn.textContent = 'Activar alerta';
+  btn.disabled    = false;
+  btn.textContent = type === 'price' ? 'Activar alerta' : 'Suscribirme';
 }
 
 function updateHdrTime() {
-  document.getElementById('hdr-time').textContent = new Date().toLocaleString('es-DO',{weekday:'short',day:'numeric',month:'short',hour:'2-digit',minute:'2-digit'});
+  document.getElementById('hdr-time').textContent = new Date().toLocaleString('es-DO', {weekday:'short', day:'numeric', month:'short', hour:'2-digit', minute:'2-digit'});
 }
 
 updateHdrTime();
