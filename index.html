@@ -364,21 +364,29 @@ function renderTable(data) {
 }
 
 function renderWinners(data) {
-  const bb  = [...data].sort((a,b) => b.buy - a.buy)[0];
-  const bs  = [...data].sort((a,b) => a.sell - b.sell)[0];
-  const cur = activeCurrency === 'EUR' ? 'euro' : 'dólar';
+  const maxBuy  = Math.max(...data.map(d => d.buy));
+  const minSell = Math.min(...data.map(d => d.sell));
+
+  const buyWinners  = data.filter(d => d.buy === maxBuy);
+  const sellWinners = data.filter(d => d.sell === minSell);
+
+  const cur      = activeCurrency === 'EUR' ? 'euro' : 'dólar';
   const curLabel = activeCurrency;
 
-  document.getElementById('win-buy-label').textContent = `✦ Mejor compra ${curLabel}`;
+  document.getElementById('win-buy-label').textContent  = `✦ Mejor compra ${curLabel}`;
   document.getElementById('win-sell-label').textContent = `✦ Mejor venta ${curLabel}`;
 
-  document.getElementById('win-buy-bank').textContent = bb.bank;
-  document.getElementById('win-buy-rate').textContent = 'RD$ ' + bb.buy.toFixed(2);
-  document.getElementById('win-buy-sub').textContent  = `el banco paga más por tu ${cur}`;
+  document.getElementById('win-buy-bank').textContent = buyWinners.map(b => b.bank).join(' · ');
+  document.getElementById('win-buy-rate').textContent = 'RD$ ' + maxBuy.toFixed(2);
+  document.getElementById('win-buy-sub').textContent  = buyWinners.length > 1
+    ? `${buyWinners.length} bancos empatados`
+    : `el banco paga más por tu ${cur}`;
 
-  document.getElementById('win-sell-bank').textContent = bs.bank;
-  document.getElementById('win-sell-rate').textContent = 'RD$ ' + bs.sell.toFixed(2);
-  document.getElementById('win-sell-sub').textContent  = `el banco cobra menos por el ${cur}`;
+  document.getElementById('win-sell-bank').textContent = sellWinners.map(b => b.bank).join(' · ');
+  document.getElementById('win-sell-rate').textContent = 'RD$ ' + minSell.toFixed(2);
+  document.getElementById('win-sell-sub').textContent  = sellWinners.length > 1
+    ? `${sellWinners.length} bancos empatados`
+    : `el banco cobra menos por el ${cur}`;
 }
 
 function onBankClick(bank) {
