@@ -6,7 +6,6 @@
   window.dataLayer = window.dataLayer || [];
   function gtag(){dataLayer.push(arguments);}
   gtag('js', new Date());
-
   gtag('config', 'G-YVX748YVTG');
 </script>
 <head>
@@ -46,7 +45,7 @@ body{background:var(--bg);color:var(--text);font-family:var(--sans);font-size:15
 @media(max-width:480px){.winner-grid{grid-template-columns:1fr;}}
 .winner-card{background:rgba(255,255,255,0.12);border:1px solid rgba(255,255,255,0.2);border-radius:var(--r-md);padding:14px 16px;}
 .winner-label{font-size:10px;font-family:var(--mono);color:rgba(255,255,255,0.6);letter-spacing:0.12em;text-transform:uppercase;margin-bottom:6px;}
-.winner-bank{font-size:13px;color:rgba(255,255,255,0.85);font-weight:500;margin-bottom:2px;}
+.winner-bank{font-size:13px;color:rgba(255,255,255,0.85);font-weight:500;margin-bottom:2px;line-height:1.4;}
 .winner-rate{font-family:var(--serif);font-size:2rem;color:#fff;line-height:1;}
 .winner-sub{font-size:11px;color:rgba(255,255,255,0.5);margin-top:4px;}
 .main{max-width:900px;margin:0 auto;padding:1.5rem 1.25rem 4rem;}
@@ -115,6 +114,7 @@ body{background:var(--bg);color:var(--text);font-family:var(--sans);font-size:15
 .alert-field input:focus{border-color:var(--accent);background:var(--surface);}
 .btn-alert{background:var(--text);color:var(--bg);border:none;border-radius:var(--r-sm);padding:9px 18px;font-size:13px;font-weight:500;font-family:var(--sans);cursor:pointer;white-space:nowrap;transition:opacity 0.15s;}
 .btn-alert:hover{opacity:0.8;}
+.btn-alert:disabled{opacity:0.5;cursor:not-allowed;}
 .alert-confirm{font-size:12px;color:var(--accent);font-family:var(--mono);margin-top:8px;display:none;}
 footer{border-top:1px solid var(--border);padding:1.5rem 1.25rem;text-align:center;font-size:12px;color:var(--faint);font-family:var(--mono);line-height:1.8;}
 footer a{color:var(--faint);text-decoration:none;}
@@ -231,8 +231,8 @@ footer a{color:var(--faint);text-decoration:none;}
     <div class="panel-title" style="margin-bottom:0.75rem">Avísame cuando la tasa supere un límite</div>
     <div class="alert-row">
       <div class="alert-field">
-        <label>Tu WhatsApp o email</label>
-        <input type="text" id="alertContact" placeholder="+1 809 000 0000">
+        <label>Tu email</label>
+        <input type="email" id="alertContact" placeholder="tu@email.com">
       </div>
       <div class="alert-field">
         <label>Tasa mínima de compra (RD$)</label>
@@ -240,7 +240,7 @@ footer a{color:var(--faint);text-decoration:none;}
       </div>
       <button class="btn-alert" onclick="signupAlert()">Activar alerta</button>
     </div>
-    <div class="alert-confirm" id="alertConfirm">✓ Alerta registrada — te avisaremos cuando la tasa supere tu límite.</div>
+    <div class="alert-confirm" id="alertConfirm">✓ Alerta activada — revisa tu email para confirmar.</div>
   </div>
 
 </main>
@@ -273,6 +273,7 @@ function switchCurrency(currency) {
   activeCurrency = currency;
   document.querySelectorAll('.currency-tab').forEach(t => t.classList.toggle('active', t.textContent===currency));
   document.getElementById('table-label').textContent = `Tasas ${currency} — todas las entidades`;
+  selectedBank = null;
   fetchRates();
 }
 
@@ -307,13 +308,9 @@ async function fetchRates() {
 async function buildHistory(banks) {
   for (const b of banks) {
     try {
-      const res = await fetch(`${API}/api/rates/history?bank=${encodeURIComponent(b.bank)}&currency=${activeCurrency}&days=7`);
+      const res  = await fetch(`${API}/api/rates/history?bank=${encodeURIComponent(b.bank)}&currency=${activeCurrency}&days=7`);
       const data = await res.json();
-      if (data.history && data.history.length > 0) {
-        histData[b.bank] = data.history;
-      } else {
-        histData[b.bank] = buildFallback(b);
-      }
+      histData[b.bank] = (data.history && data.history.length > 0) ? data.history : buildFallback(b);
     } catch(e) {
       histData[b.bank] = buildFallback(b);
     }
@@ -337,25 +334,29 @@ function buildFallback(b) {
 }
 
 function renderTable(data) {
-  const sorted  = [...data].sort((a,b)=>b.buy-a.buy);
-  const bestBuy = sorted[0].bank;
-  const bestSell= [...data].sort((a,b)=>a.sell-b.sell)[0].bank;
-  const rows = sorted.map((d,i)=>{
-    const c = BANK_COLORS[i%BANK_COLORS.length];
+  const sorted   = [...data].sort((a,b) => b.buy - a.buy);
+  const maxBuy   = Math.max(...data.map(d => d.buy));
+  const minSell  = Math.min(...data.map(d => d.sell));
+  const bestBuy  = data.filter(d => d.buy === maxBuy).map(d => d.bank);
+  const bestSell = data.filter(d => d.sell === minSell).map(d => d.bank);
+
+  const rows = sorted.map((d,i) => {
+    const c    = BANK_COLORS[i % BANK_COLORS.length];
     const init = d.bank.split(' ').filter(w=>w.length>2).slice(0,2).map(w=>w[0]).join('');
     return `<tr onclick="onBankClick('${d.bank}')">
       <td><div class="bank-cell">
         <div class="bank-icon" style="background:${c.bg};color:${c.fg}">${init}</div>
         <div>
-          <div class="bank-name-text">${d.bank}${d.bank===bestBuy?'<span class="badge badge-buy">mejor</span>':''}</div>
+          <div class="bank-name-text">${d.bank}${bestBuy.includes(d.bank)?'<span class="badge badge-buy">mejor</span>':''}</div>
           <div class="bank-name-short">Tasa del día</div>
         </div>
       </div></td>
       <td><span class="rate-val rate-buy">RD$ ${d.buy.toFixed(2)}</span></td>
-      <td><span class="rate-val rate-sell">${d.bank===bestSell?'<span class="badge badge-sell">mejor</span>':''} RD$ ${d.sell.toFixed(2)}</span></td>
+      <td><span class="rate-val rate-sell">${bestSell.includes(d.bank)?'<span class="badge badge-sell">mejor</span>':''} RD$ ${d.sell.toFixed(2)}</span></td>
       <td><span class="spread-val">RD$ ${d.spread.toFixed(2)}</span></td>
     </tr>`;
   }).join('');
+
   document.getElementById('tableContent').innerHTML = `
     <table class="rate-table">
       <thead><tr><th>Banco</th><th>Compra ↑</th><th>Venta</th><th>Diferencial</th></tr></thead>
@@ -393,13 +394,13 @@ function onBankClick(bank) {
   selectedBank = bank;
   renderChart(bank);
   document.getElementById('chart-bank-label').textContent = bank;
-  const r = ratesData.find(d=>d.bank===bank);
+  const r = ratesData.find(d => d.bank === bank);
   if (r) {
-    const rate = document.getElementById('rateTypeSelect').value==='buy' ? r.buy : r.sell;
-    const usd  = parseFloat(document.getElementById('usdInput').value)||0;
-    document.getElementById('dopInput').value = (usd*rate).toFixed(2);
-    document.getElementById('convResultNum').textContent = 'RD$ '+(usd*rate).toLocaleString('es-DO',{minimumFractionDigits:2,maximumFractionDigits:2});
-    document.getElementById('convResultSub').textContent = `1 USD = RD$ ${rate.toFixed(2)} · ${bank}`;
+    const rate = document.getElementById('rateTypeSelect').value === 'buy' ? r.buy : r.sell;
+    const usd  = parseFloat(document.getElementById('usdInput').value) || 0;
+    document.getElementById('dopInput').value = (usd * rate).toFixed(2);
+    document.getElementById('convResultNum').textContent = 'RD$ ' + (usd * rate).toLocaleString('es-DO',{minimumFractionDigits:2,maximumFractionDigits:2});
+    document.getElementById('convResultSub').textContent = `1 ${activeCurrency} = RD$ ${rate.toFixed(2)} · ${bank}`;
   }
 }
 
@@ -408,15 +409,16 @@ function renderChart(bank) {
   if (!hist) return;
   if (chartInst) chartInst.destroy();
   chartInst = new Chart(document.getElementById('histChart').getContext('2d'), {
-    type:'line',
-    data:{
-      labels:hist.map(h=>h.date),
-      datasets:[
+    type: 'line',
+    data: {
+      labels: hist.map(h => h.date),
+      datasets: [
         {label:'Compra',data:hist.map(h=>h.buy),borderColor:'#1D5C3A',backgroundColor:'rgba(29,92,58,0.06)',borderWidth:2,pointRadius:3,pointBackgroundColor:'#1D5C3A',fill:true,tension:0.35},
         {label:'Venta',data:hist.map(h=>h.sell),borderColor:'#A0762A',backgroundColor:'rgba(160,118,42,0.04)',borderWidth:2,pointRadius:3,pointBackgroundColor:'#A0762A',fill:false,tension:0.35}
       ]
     },
-    options:{responsive:true,maintainAspectRatio:false,
+    options:{
+      responsive:true,maintainAspectRatio:false,
       plugins:{
         legend:{display:true,labels:{font:{family:"'DM Mono',monospace",size:11},boxWidth:12,padding:12}},
         tooltip:{callbacks:{label:ctx=>`RD$ ${ctx.parsed.y.toFixed(2)}`},bodyFont:{family:"'DM Mono',monospace",size:12}}
@@ -431,45 +433,85 @@ function renderChart(bank) {
 
 function getBestRate(type) {
   if (!ratesData.length) return null;
-  if (selectedBank) { const r=ratesData.find(d=>d.bank===selectedBank); if(r) return type==='buy'?r.buy:r.sell; }
-  return type==='buy' ? Math.max(...ratesData.map(d=>d.buy)) : Math.min(...ratesData.map(d=>d.sell));
+  if (selectedBank) { const r = ratesData.find(d => d.bank === selectedBank); if (r) return type === 'buy' ? r.buy : r.sell; }
+  return type === 'buy' ? Math.max(...ratesData.map(d => d.buy)) : Math.min(...ratesData.map(d => d.sell));
 }
 
 function convert() {
-  const usd=parseFloat(document.getElementById('usdInput').value)||0;
-  const rate=getBestRate(document.getElementById('rateTypeSelect').value);
-  if(!rate) return;
-  const dop=usd*rate;
-  document.getElementById('dopInput').value=dop.toFixed(2);
-  document.getElementById('convResultNum').textContent='RD$ '+dop.toLocaleString('es-DO',{minimumFractionDigits:2,maximumFractionDigits:2});
-  document.getElementById('convResultSub').textContent=`1 USD = RD$ ${rate.toFixed(2)} · ${selectedBank||'mejor tasa'}`;
+  const usd  = parseFloat(document.getElementById('usdInput').value) || 0;
+  const rate = getBestRate(document.getElementById('rateTypeSelect').value);
+  if (!rate) return;
+  const dop = usd * rate;
+  document.getElementById('dopInput').value = dop.toFixed(2);
+  document.getElementById('convResultNum').textContent = 'RD$ ' + dop.toLocaleString('es-DO',{minimumFractionDigits:2,maximumFractionDigits:2});
+  document.getElementById('convResultSub').textContent = `1 ${activeCurrency} = RD$ ${rate.toFixed(2)} · ${selectedBank||'mejor tasa'}`;
 }
 
 function convertReverse() {
-  const dop=parseFloat(document.getElementById('dopInput').value)||0;
-  const rate=getBestRate(document.getElementById('rateTypeSelect').value);
-  if(!rate) return;
-  const usd=dop/rate;
-  document.getElementById('usdInput').value=usd.toFixed(2);
-  document.getElementById('convResultNum').textContent='$ '+usd.toLocaleString('es-DO',{minimumFractionDigits:2,maximumFractionDigits:2});
-  document.getElementById('convResultSub').textContent=`1 USD = RD$ ${rate.toFixed(2)}`;
+  const dop  = parseFloat(document.getElementById('dopInput').value) || 0;
+  const rate = getBestRate(document.getElementById('rateTypeSelect').value);
+  if (!rate) return;
+  const usd = dop / rate;
+  document.getElementById('usdInput').value = usd.toFixed(2);
+  document.getElementById('convResultNum').textContent = '$ ' + usd.toLocaleString('es-DO',{minimumFractionDigits:2,maximumFractionDigits:2});
+  document.getElementById('convResultSub').textContent = `1 ${activeCurrency} = RD$ ${rate.toFixed(2)}`;
 }
 
-function signupAlert() {
-  const contact=document.getElementById('alertContact').value.trim();
-  const rate=document.getElementById('alertRate').value.trim();
-  if(!contact||!rate) return;
-  const c=document.getElementById('alertConfirm');
-  c.style.display='block';
-  setTimeout(()=>c.style.display='none',5000);
+async function signupAlert() {
+  const email      = document.getElementById('alertContact').value.trim();
+  const targetRate = document.getElementById('alertRate').value.trim();
+
+  if (!email || !targetRate) {
+    alert('Por favor introduce tu email y la tasa deseada');
+    return;
+  }
+
+  if (!email.includes('@')) {
+    alert('Por favor introduce un email válido');
+    return;
+  }
+
+  const btn = document.querySelector('.btn-alert');
+  btn.disabled = true;
+  btn.textContent = 'Guardando…';
+
+  try {
+    const res = await fetch(`${API}/api/alerts`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        email,
+        targetRate: parseFloat(targetRate),
+        currency: activeCurrency
+      })
+    });
+
+    const data = await res.json();
+
+    if (data.success) {
+      const confirm = document.getElementById('alertConfirm');
+      confirm.textContent = '✓ Alerta activada — revisa tu email para confirmar';
+      confirm.style.display = 'block';
+      document.getElementById('alertContact').value = '';
+      document.getElementById('alertRate').value = '';
+      setTimeout(() => confirm.style.display = 'none', 6000);
+    } else {
+      alert('Error: ' + (data.error || 'Intenta de nuevo'));
+    }
+  } catch(e) {
+    alert('Error al guardar la alerta. Intenta de nuevo.');
+  }
+
+  btn.disabled = false;
+  btn.textContent = 'Activar alerta';
 }
 
 function updateHdrTime() {
-  document.getElementById('hdr-time').textContent=new Date().toLocaleString('es-DO',{weekday:'short',day:'numeric',month:'short',hour:'2-digit',minute:'2-digit'});
+  document.getElementById('hdr-time').textContent = new Date().toLocaleString('es-DO',{weekday:'short',day:'numeric',month:'short',hour:'2-digit',minute:'2-digit'});
 }
 
 updateHdrTime();
-setInterval(updateHdrTime,60000);
+setInterval(updateHdrTime, 60000);
 fetchRates();
 </script>
 </body>
