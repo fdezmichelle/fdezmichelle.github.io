@@ -370,11 +370,11 @@ function renderTable(data) {
       <td><div class="bank-cell">
         <div class="bank-icon" style="background:${c.bg};color:${c.fg}">${init}</div>
         <div>
-          <div class="bank-name-text">${d.bank}${bestBuy.includes(d.bank) ? '<span class="badge badge-buy">mejor</span>' : ''}</div>
+          <div class="bank-name-text">${d.bank}</div>
           <div class="bank-name-short">Tasa del día</div>
         </div>
       </div></td>
-      <td><span class="rate-val rate-buy">RD$ ${d.buy.toFixed(2)}</span></td>
+      <td>${bestBuy.includes(d.bank) ? '<span class="badge badge-buy">mejor</span>' : ''}<span class="rate-val rate-buy">RD$ ${d.buy.toFixed(2)}</span></td>
       <td><span class="rate-val rate-sell">${bestSell.includes(d.bank) ? '<span class="badge badge-sell">mejor</span>' : ''} RD$ ${d.sell.toFixed(2)}</span></td>
       <td><span class="spread-val">RD$ ${d.spread.toFixed(2)}</span></td>
     </tr>`;
