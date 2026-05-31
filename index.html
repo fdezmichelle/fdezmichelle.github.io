@@ -504,7 +504,7 @@ function switchAlertType(type) {
 }
 
 async function signupAlert(type) {
-  const emailId = type === 'price' ? 'alertContact' : 'alertDailyEmail';
+  const emailId = type === 'price' ? 'alertContact' : type === 'sell' ? 'alertSellEmail' : 'alertDailyEmail';
   const email   = document.getElementById(emailId).value.trim();
 
   if (!email || !email.includes('@')) {
@@ -519,8 +519,15 @@ async function signupAlert(type) {
       return;
     }
   }
+  if (type === 'sell') {
+    const targetRate = document.getElementById('alertSellRate').value.trim();
+    if (!targetRate) {
+      alert('Por favor introduce la tasa objetivo');
+      return;
+    }
+  }
 
-  const btnId = type === 'price' ? 'btn-price-submit' : 'btn-daily-submit';
+  const btnId = type === 'price' ? 'btn-price-submit' : type === 'sell' ? 'btn-sell-submit' : 'btn-daily-submit';
   const btn   = document.getElementById(btnId);
   btn.disabled    = true;
   btn.textContent = 'Guardando…';
@@ -528,6 +535,8 @@ async function signupAlert(type) {
   try {
     const body = type === 'price'
       ? { email, targetRate: parseFloat(document.getElementById('alertRate').value), currency: activeCurrency, type: 'price' }
+      : type === 'sell'
+      ? { email, targetRate: parseFloat(document.getElementById('alertSellRate').value), currency: activeCurrency, type: 'sell' }
       : { email, type: 'daily' };
 
     const res  = await fetch(`${API}/api/alerts`, {
@@ -541,11 +550,14 @@ async function signupAlert(type) {
     if (data.success) {
       const confirm = document.getElementById('alertConfirm');
       confirm.textContent = type === 'price'
-        ? '✓ Alerta de precio activada — revisa tu email'
+        ? '✓ Alerta de compra activada — revisa tu email'
+        : type === 'sell'
+        ? '✓ Alerta de venta activada — revisa tu email'
         : '✓ Suscrito al resumen diario — revisa tu email';
       confirm.style.display = 'block';
       document.getElementById(emailId).value = '';
       if (type === 'price') document.getElementById('alertRate').value = '';
+      if (type === 'sell') document.getElementById('alertSellRate').value = '';
       setTimeout(() => confirm.style.display = 'none', 6000);
     } else {
       alert('Error: ' + (data.error || 'Intenta de nuevo'));
@@ -555,7 +567,7 @@ async function signupAlert(type) {
   }
 
   btn.disabled    = false;
-  btn.textContent = type === 'price' ? 'Activar alerta' : 'Suscribirme';
+  btn.textContent = type === 'price' ? 'Activar alerta' : type === 'sell' ? 'Activar alerta' : 'Suscribirme';
 }
 
 function updateHdrTime() {
