@@ -238,7 +238,7 @@ footer{border-top:1px solid var(--border);padding:1.5rem 1.25rem;text-align:cent
       <button class="alert-type-btn" id="btn-type-sell" onclick="switchAlertType('sell')">📉 Alerta de venta</button>
     </div>
 
-    <div id="alert-price-form">
+    <div id="alert-price-form" style="display:none;">
       <div class="alert-row">
         <div class="alert-field">
           <label>Tu email</label>
@@ -496,8 +496,10 @@ function convertReverse() {
 function switchAlertType(type) {
   document.getElementById('alert-price-form').style.display = type === 'price' ? 'block' : 'none';
   document.getElementById('alert-daily-form').style.display = type === 'daily' ? 'block' : 'none';
+  document.getElementById('alert-sell-form').style.display  = type === 'sell'  ? 'block' : 'none';
   document.getElementById('btn-type-price').classList.toggle('active', type === 'price');
   document.getElementById('btn-type-daily').classList.toggle('active', type === 'daily');
+  document.getElementById('btn-type-sell').classList.toggle('active',  type === 'sell');
   document.getElementById('alertConfirm').style.display = 'none';
 }
 
