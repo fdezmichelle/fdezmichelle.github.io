@@ -233,8 +233,9 @@ footer{border-top:1px solid var(--border);padding:1.5rem 1.25rem;text-align:cent
     <div class="panel-title" style="margin-bottom:0.75rem">Mantente informado</div>
 
     <div style="display:flex;gap:10px;margin-bottom:1.25rem;flex-wrap:wrap;">
-      <button class="alert-type-btn active" id="btn-type-price" onclick="switchAlertType('price')">📈 Alerta de precio</button>
-      <button class="alert-type-btn" id="btn-type-daily" onclick="switchAlertType('daily')">📧 Resumen diario</button>
+      <button class="alert-type-btn active" id="btn-type-daily" onclick="switchAlertType('daily')">📧 Resumen diario</button>
+      <button class="alert-type-btn" id="btn-type-price" onclick="switchAlertType('price')">📈 Alerta de compra</button>
+      <button class="alert-type-btn" id="btn-type-sell" onclick="switchAlertType('sell')">📉 Alerta de venta</button>
     </div>
 
     <div id="alert-price-form">
