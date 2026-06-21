@@ -233,12 +233,12 @@ footer{border-top:1px solid var(--border);padding:1.5rem 1.25rem;text-align:cent
     <div class="panel-title" style="margin-bottom:0.75rem">Mantente informado</div>
 
     <div style="display:flex;gap:10px;margin-bottom:1.25rem;flex-wrap:wrap;">
-      <button class="alert-type-btn active" id="btn-type-daily" onclick="switchAlertType('daily')">📧 Resumen diario</button>
-      <button class="alert-type-btn" id="btn-type-price" onclick="switchAlertType('price')">📈 Alerta de compra</button>
+      <!-- <button class="alert-type-btn active" id="btn-type-daily" onclick="switchAlertType('daily')">📧 Resumen diario</button> -->
+      <button class="alert-type-btn active" id="btn-type-price" onclick="switchAlertType('price')">📈 Alerta de compra</button>
       <button class="alert-type-btn" id="btn-type-sell" onclick="switchAlertType('sell')">📉 Alerta de venta</button>
     </div>
 
-    <div id="alert-price-form" style="display:none;">
+    <div id="alert-price-form">
       <div class="alert-row">
         <div class="alert-field">
           <label>Tu email</label>
@@ -253,7 +253,7 @@ footer{border-top:1px solid var(--border);padding:1.5rem 1.25rem;text-align:cent
       <div class="alert-hint">Te avisamos cuando cualquier banco supere tu tasa objetivo</div>
     </div>
 
-    <div id="alert-daily-form">
+    <!-- <div id="alert-daily-form">
       <div class="alert-row">
         <div class="alert-field">
           <label>Tu email</label>
@@ -262,7 +262,7 @@ footer{border-top:1px solid var(--border);padding:1.5rem 1.25rem;text-align:cent
         <button class="btn-alert" id="btn-daily-submit" onclick="signupAlert('daily')">Suscribirme</button>
       </div>
       <div class="alert-hint">Recibirás un email cada mañana con las mejores tasas del día</div>
-    </div>
+    </div> -->
 
     <div id="alert-sell-form" style="display:none;">
   <div class="alert-row">
