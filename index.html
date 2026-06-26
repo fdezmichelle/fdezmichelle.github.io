@@ -34,7 +34,7 @@ body{background:var(--bg);color:var(--text);font-family:var(--sans);font-size:15
 .site-header{background:var(--surface);border-bottom:1px solid var(--border);padding:0 1.25rem;position:sticky;top:0;z-index:100;}
 .header-inner{max-width:900px;margin:0 auto;display:flex;align-items:center;justify-content:space-between;height:56px;gap:1rem;}
 .logo{font-family:var(--serif);font-size:22px;color:var(--text);letter-spacing:-0.02em;display:flex;align-items:center;gap:8px;text-decoration:none;}
-.logo-dot{width:8px;height:8px;border-radius:50%;background:var(--accent);display:inline-block;}
+/*.logo-dot{width:8px;height:8px;border-radius:50%;background:var(--accent);display:inline-block;}*/
 .header-meta{font-family:var(--mono);font-size:11px;color:var(--muted);text-align:right;line-height:1.4;}
 .hero{background:var(--accent);padding:2rem 1.25rem 2.5rem;position:relative;overflow:hidden;}
 .hero::before{content:'RD$';position:absolute;right:-0.5rem;top:-1rem;font-family:var(--serif);font-size:clamp(80px,20vw,140px);color:rgba(255,255,255,0.05);pointer-events:none;line-height:1;}
@@ -132,7 +132,13 @@ footer{border-top:1px solid var(--border);padding:1.5rem 1.25rem;text-align:cent
 
 <header class="site-header">
   <div class="header-inner">
-    <a class="logo" href="/"><span class="logo-dot"></span>Dame la Tasa</a>
+    <a class="logo" href="/">
+      <svg width="32" height="20" viewBox="0 0 52 26" fill="none" xmlns="http://www.w3.org/2000/svg">
+        <path d="M2 26 L21 2 L40 26" fill="none" stroke="#5C1A2E" stroke-width="3.5" stroke-linecap="round" stroke-linejoin="round"/>
+        <path d="M10 2 L29 26 L48 2" fill="none" stroke="#B8860B" stroke-width="3.5" stroke-linecap="round" stroke-linejoin="round"/>
+      </svg>
+      Dame la Tasa
+    </a>
     <div class="header-meta">USD · EUR / DOP<br><span id="hdr-time">—</span></div>
   </div>
 </header>
@@ -285,7 +291,10 @@ footer{border-top:1px solid var(--border);padding:1.5rem 1.25rem;text-align:cent
 </main>
 
 <footer>
-  <strong style="color:var(--text);font-family:var(--serif);font-size:16px;">Dame la Tasa</strong><br>
+  <svg width="22" height="14" viewBox="0 0 52 26" fill="none" xmlns="http://www.w3.org/2000/svg" style="opacity:0.35;vertical-align:middle;margin-right:6px;">
+    <path d="M2 26 L21 2 L40 26" fill="none" stroke="#1A1714" stroke-width="3.5" stroke-linecap="round" stroke-linejoin="round"/>
+    <path d="M10 2 L29 26 L48 2" fill="none" stroke="#1A1714" stroke-width="3.5" stroke-linecap="round" stroke-linejoin="round"/>
+  </svg><strong style="color:var(--text);font-family:var(--serif);font-size:16px;">Dame la Tasa</strong><br>
   Datos obtenidos directamente del website oficial de cada banco · Actualización cada 2 horas<br>
   Verifica siempre con tu banco antes de realizar transacciones · No somos asesores financieros
 </footer>
