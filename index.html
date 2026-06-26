@@ -495,12 +495,11 @@ function convertReverse() {
 
 function switchAlertType(type) {
   document.getElementById('alert-price-form').style.display = type === 'price' ? 'block' : 'none';
-  document.getElementById('alert-daily-form').style.display = type === 'daily' ? 'block' : 'none';
   document.getElementById('alert-sell-form').style.display  = type === 'sell'  ? 'block' : 'none';
   document.getElementById('btn-type-price').classList.toggle('active', type === 'price');
-  document.getElementById('btn-type-daily').classList.toggle('active', type === 'daily');
   document.getElementById('btn-type-sell').classList.toggle('active',  type === 'sell');
   document.getElementById('alertConfirm').style.display = 'none';
+
 }
 
 async function signupAlert(type) {
