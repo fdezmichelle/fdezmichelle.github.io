@@ -417,13 +417,13 @@ function renderWinners(data) {
   document.getElementById('win-buy-rate').textContent = 'RD$ ' + maxBuy.toFixed(2);
   document.getElementById('win-buy-sub').textContent  = buyWinners.length > 1
     ? `${buyWinners.length} bancos empatados`
-    : `el banco paga más por tu ${cur}`;
+    : `el banco te paga más por cada ${cur}`;
 
   document.getElementById('win-sell-bank').textContent = sellWinners.map(b => b.bank).join(' · ');
   document.getElementById('win-sell-rate').textContent = 'RD$ ' + minSell.toFixed(2);
   document.getElementById('win-sell-sub').textContent  = sellWinners.length > 1
     ? `${sellWinners.length} bancos empatados`
-    : `el banco cobra menos por el ${cur}`;
+    : `el banco te vende el ${cur} más barato`;
 }
 
 function onBankClick(bank) {
